@@ -25,6 +25,8 @@ void ChatWidget::receivedMessage(const QString &message,
 
 void ChatWidget::sendMessage() {
   QString message = ui->msg->text();
-  m_sender->sendMessage(message, MY_IP);
-  ui->msg->clear();
+  if(!message.isEmpty()) {
+      m_sender->sendMessage(message, MY_IP);
+      ui->msg->clear();
+  }
 }
