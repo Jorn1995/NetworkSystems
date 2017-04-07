@@ -31,22 +31,22 @@
  <connections>
   <connection>
    <sender>msg</sender>
-   <signal>textEdited(QString)</signal>
+   <signal>editingFinished()</signal>
    <receiver>ChatWidget</receiver>
-   <slot>sendMessage(QString)</slot>
+   <slot>sendMessage()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>102</x>
-     <y>284</y>
+     <x>265</x>
+     <y>286</y>
     </hint>
     <hint type="destinationlabel">
-     <x>4</x>
-     <y>297</y>
+     <x>439</x>
+     <y>424</y>
     </hint>
    </hints>
   </connection>
  </connections>
  <slots>
-  <slot>sendMessage(QString)</slot>
+  <slot>sendMessage()</slot>
  </slots>
 </ui>

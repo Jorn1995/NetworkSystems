@@ -21,8 +21,9 @@ HEADERS  += ChatWidget.h \
     Protocol/Sender.h \
     Protocol/Receiver.h \
     config.h.local \
-    config.h
+    config.h \
+    config.h.local
 
-OTHER_FILES += config.h.local.dist
+OTHER_FILES +=
 
 FORMS    += chatwidget.ui

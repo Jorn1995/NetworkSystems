@@ -23,6 +23,8 @@ void ChatWidget::receivedMessage(const QString &message,
   ui->log->appendPlainText(QString("%1 said : %2").arg(sender, message));
 }
 
-void ChatWidget::sendMessage(const QString &message) {
+void ChatWidget::sendMessage() {
+  QString message = ui->msg->text();
   m_sender->sendMessage(message, MY_IP);
+  ui->msg->clear();
 }

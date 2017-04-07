@@ -21,7 +21,7 @@ public:
 
   // GUI slots
 private slots:
-  void sendMessage(const QString &message);
+  void sendMessage();
 
   // Protocol slots
 private slots:
