@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -13,8 +13,16 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        ChatWidget.cpp
+        ChatWidget.cpp \
+    Protocol/Sender.cpp \
+    Protocol/Receiver.cpp
 
-HEADERS  += ChatWidget.h
+HEADERS  += ChatWidget.h \
+    Protocol/Sender.h \
+    Protocol/Receiver.h \
+    config.h.local \
+    config.h
+
+OTHER_FILES += config.h.local.dist
 
 FORMS    += chatwidget.ui

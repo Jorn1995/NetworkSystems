@@ -1,7 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>ChatWidget</class>
- <widget class="QWidget" name="ChatWidget" >
-  <property name="geometry" >
+ <widget class="QWidget" name="ChatWidget">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
@@ -9,12 +10,43 @@
     <height>300</height>
    </rect>
   </property>
-  <property name="windowTitle" >
+  <property name="windowTitle">
    <string>ChatWidget</string>
   </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QPlainTextEdit" name="log"/>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLineEdit" name="msg"/>
+   </item>
+  </layout>
  </widget>
- <layoutDefault spacing="6" margin="11" />
- <pixmapfunction></pixmapfunction>
+ <layoutdefault spacing="6" margin="11"/>
+ <tabstops>
+  <tabstop>msg</tabstop>
+  <tabstop>log</tabstop>
+ </tabstops>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>msg</sender>
+   <signal>textEdited(QString)</signal>
+   <receiver>ChatWidget</receiver>
+   <slot>sendMessage(QString)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>102</x>
+     <y>284</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>4</x>
+     <y>297</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>sendMessage(QString)</slot>
+ </slots>
 </ui>
