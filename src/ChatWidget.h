@@ -8,8 +8,7 @@ class ChatWidget;
 }
 
 namespace Protocol {
-class Sender;
-class Receiver;
+class Duplex;
 }
 
 class ChatWidget : public QWidget {
@@ -30,8 +29,7 @@ private slots:
 private:
   Ui::ChatWidget *ui;
 
-  Protocol::Sender *m_sender;
-  Protocol::Receiver *m_receiver;
+  Protocol::Duplex *m_duplex;
 };
 
 #endif // CHATWIDGET_H

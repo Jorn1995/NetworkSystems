@@ -14,15 +14,14 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         ChatWidget.cpp \
-    Protocol/Sender.cpp \
-    Protocol/Receiver.cpp
+    Protocol/Duplex.cpp
 
 HEADERS  += ChatWidget.h \
-    Protocol/Sender.h \
-    Protocol/Receiver.h \
     config.h.local \
     config.h \
-    config.h.local
+    config.h.local \
+    Protocol/Duplex.h \
+    Protocol/Flag.h
 
 OTHER_FILES +=
 

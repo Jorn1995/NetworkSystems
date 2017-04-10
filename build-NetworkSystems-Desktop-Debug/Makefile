@@ -50,17 +50,13 @@ OBJECTS_DIR   = ./
 
 SOURCES       = ../src/main.cpp \
 		../src/ChatWidget.cpp \
-		../src/Protocol/Sender.cpp \
-		../src/Protocol/Receiver.cpp moc_ChatWidget.cpp \
-		moc_Sender.cpp \
-		moc_Receiver.cpp
+		../src/Protocol/Duplex.cpp moc_ChatWidget.cpp \
+		moc_Duplex.cpp
 OBJECTS       = main.o \
 		ChatWidget.o \
-		Sender.o \
-		Receiver.o \
+		Duplex.o \
 		moc_ChatWidget.o \
-		moc_Sender.o \
-		moc_Receiver.o
+		moc_Duplex.o
 DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/common/unix.conf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/common/linux.conf \
@@ -123,14 +119,13 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/yacc.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/lex.prf \
 		../src/NetworkSystems.pro ../src/ChatWidget.h \
-		../src/Protocol/Sender.h \
-		../src/Protocol/Receiver.h \
 		../src/config.h.local \
 		../src/config.h \
-		../src/config.h.local ../src/main.cpp \
+		../src/config.h.local \
+		../src/Protocol/Duplex.h \
+		../src/Protocol/Flag.h ../src/main.cpp \
 		../src/ChatWidget.cpp \
-		../src/Protocol/Sender.cpp \
-		../src/Protocol/Receiver.cpp
+		../src/Protocol/Duplex.cpp
 QMAKE_TARGET  = NetworkSystems
 DESTDIR       = #avoid trailing-slash linebreak
 TARGET        = NetworkSystems
@@ -308,8 +303,8 @@ dist: distdir FORCE
 distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
-	$(COPY_FILE) --parents ../src/ChatWidget.h ../src/Protocol/Sender.h ../src/Protocol/Receiver.h ../src/config.h.local ../src/config.h ../src/config.h.local $(DISTDIR)/
-	$(COPY_FILE) --parents ../src/main.cpp ../src/ChatWidget.cpp ../src/Protocol/Sender.cpp ../src/Protocol/Receiver.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents ../src/ChatWidget.h ../src/config.h.local ../src/config.h ../src/config.h.local ../src/Protocol/Duplex.h ../src/Protocol/Flag.h $(DISTDIR)/
+	$(COPY_FILE) --parents ../src/main.cpp ../src/ChatWidget.cpp ../src/Protocol/Duplex.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents ../src/chatwidget.ui $(DISTDIR)/
 
 
@@ -333,17 +328,14 @@ check: first
 
 compiler_rcc_make_all:
 compiler_rcc_clean:
-compiler_moc_header_make_all: moc_ChatWidget.cpp moc_Sender.cpp moc_Receiver.cpp
+compiler_moc_header_make_all: moc_ChatWidget.cpp moc_Duplex.cpp
 compiler_moc_header_clean:
-	-$(DEL_FILE) moc_ChatWidget.cpp moc_Sender.cpp moc_Receiver.cpp
+	-$(DEL_FILE) moc_ChatWidget.cpp moc_Duplex.cpp
 moc_ChatWidget.cpp: ../src/ChatWidget.h
 	/usr/lib/x86_64-linux-gnu/qt5/bin/moc $(DEFINES) -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++-64 -I/home/jornb/workspace2/NetworkSystems/src -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/5 -I/usr/include/x86_64-linux-gnu/c++/5 -I/usr/include/c++/5/backward -I/usr/lib/gcc/x86_64-linux-gnu/5/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/5/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include ../src/ChatWidget.h -o moc_ChatWidget.cpp
 
-moc_Sender.cpp: ../src/Protocol/Sender.h
-	/usr/lib/x86_64-linux-gnu/qt5/bin/moc $(DEFINES) -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++-64 -I/home/jornb/workspace2/NetworkSystems/src -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/5 -I/usr/include/x86_64-linux-gnu/c++/5 -I/usr/include/c++/5/backward -I/usr/lib/gcc/x86_64-linux-gnu/5/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/5/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include ../src/Protocol/Sender.h -o moc_Sender.cpp
-
-moc_Receiver.cpp: ../src/Protocol/Receiver.h
-	/usr/lib/x86_64-linux-gnu/qt5/bin/moc $(DEFINES) -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++-64 -I/home/jornb/workspace2/NetworkSystems/src -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/5 -I/usr/include/x86_64-linux-gnu/c++/5 -I/usr/include/c++/5/backward -I/usr/lib/gcc/x86_64-linux-gnu/5/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/5/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include ../src/Protocol/Receiver.h -o moc_Receiver.cpp
+moc_Duplex.cpp: ../src/Protocol/Duplex.h
+	/usr/lib/x86_64-linux-gnu/qt5/bin/moc $(DEFINES) -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++-64 -I/home/jornb/workspace2/NetworkSystems/src -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/5 -I/usr/include/x86_64-linux-gnu/c++/5 -I/usr/include/c++/5/backward -I/usr/lib/gcc/x86_64-linux-gnu/5/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/5/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include ../src/Protocol/Duplex.h -o moc_Duplex.cpp
 
 compiler_moc_source_make_all:
 compiler_moc_source_clean:
@@ -368,30 +360,22 @@ main.o: ../src/main.cpp ../src/ChatWidget.h
 
 ChatWidget.o: ../src/ChatWidget.cpp ../src/ChatWidget.h \
 		ui_chatwidget.h \
-		../src/Protocol/Receiver.h \
-		../src/Protocol/Sender.h \
+		../src/Protocol/Duplex.h \
 		../src/config.h \
 		../src/config.h.local
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o ChatWidget.o ../src/ChatWidget.cpp
 
-Sender.o: ../src/Protocol/Sender.cpp ../src/Protocol/Sender.h \
+Duplex.o: ../src/Protocol/Duplex.cpp ../src/Protocol/Duplex.h \
 		../src/config.h \
-		../src/config.h.local
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Sender.o ../src/Protocol/Sender.cpp
-
-Receiver.o: ../src/Protocol/Receiver.cpp ../src/Protocol/Receiver.h \
-		../src/config.h \
-		../src/config.h.local
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Receiver.o ../src/Protocol/Receiver.cpp
+		../src/config.h.local \
+		../src/Protocol/Flag.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Duplex.o ../src/Protocol/Duplex.cpp
 
 moc_ChatWidget.o: moc_ChatWidget.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_ChatWidget.o moc_ChatWidget.cpp
 
-moc_Sender.o: moc_Sender.cpp 
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_Sender.o moc_Sender.cpp
-
-moc_Receiver.o: moc_Receiver.cpp 
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_Receiver.o moc_Receiver.cpp
+moc_Duplex.o: moc_Duplex.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_Duplex.o moc_Duplex.cpp
 
 ####### Install
 
