@@ -15,16 +15,20 @@ CONFIG += c++11
 
 SOURCES += main.cpp\
         ChatWidget.cpp \
-    Protocol/Duplex.cpp \
-    Protocol/Header.cpp
+    Protocol/NetworkLayer/Router.cpp \
+    Protocol/TransportLayer/ReliableLink.cpp \
+    Protocol/NetworkLayer/HigherProtocolInterface.cpp \
+    Protocol/NetworkLayer/IpHeader.cpp
 
 HEADERS  += ChatWidget.h \
     config.h.local \
     config.h \
     config.h.local \
-    Protocol/Duplex.h \
-    Protocol/Flag.h \
-    Protocol/Header.h
+    Protocol/TransportLayer/Flag.h \
+    Protocol/TransportLayer/ReliableLink.h \
+    Protocol/NetworkLayer/HigherProtocolInterface.h \
+    Protocol/NetworkLayer/Router.h \
+    Protocol/NetworkLayer/IpHeader.h
 
 OTHER_FILES +=
 

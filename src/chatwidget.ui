@@ -14,11 +14,21 @@
    <string>ChatWidget</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
-    <widget class="QPlainTextEdit" name="log"/>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="msg"/>
    </item>
    <item row="1" column="0">
-    <widget class="QLineEdit" name="msg"/>
+    <widget class="QSpinBox" name="target">
+     <property name="minimum">
+      <number>1</number>
+     </property>
+     <property name="maximum">
+      <number>256</number>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0" colspan="2">
+    <widget class="QPlainTextEdit" name="log"/>
    </item>
   </layout>
  </widget>

@@ -4,7 +4,8 @@
 namespace Protocol {
 
 enum Flag {
-    Acknowledgement = 0x01
+    Sync            = 0x01,
+    Acknowledgement = 0x02,
 };
 Q_DECLARE_FLAGS(Flags,Flag)
 }
