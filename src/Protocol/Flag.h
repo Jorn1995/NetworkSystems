@@ -1,11 +1,14 @@
 #ifndef FLAG_H
 #define FLAG_H
-
+#include "QFlags"
 namespace Protocol {
 
 enum Flag {
-    ACK = 0x01
+    Acknowledgement = 0x01
+};
+Q_DECLARE_FLAGS(Flags,Flag)
 }
-}
-#endif // FLAG_H
 
+Q_DECLARE_OPERATORS_FOR_FLAGS(Protocol::Flags)
+
+#endif // FLAG_H
