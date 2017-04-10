@@ -8,28 +8,60 @@ namespace Protocol {
 
 void Duplex::handleAcknowledgement(qint32 ackNum)
 {
-    for(;m_ackNum < ackNum; m_ackNum ++) {
-        m_sendBuffer.remove(m_ackNum);
+    QMutableMapIterator<qint32,QByteArray> it(m_sendBuffer);
+
+    while(it.hasNext()) {
+        it.next();
+
+        if(it.key() < ackNum) {
+            it.remove();
+        }
     }
 }
 
 void Duplex::handleReceivedPackets()
 {
+    bool needAck = false;
     while(m_receiveBuffer.contains(m_ackNum)) {
         {
             QByteArray data = m_receiveBuffer.take(m_ackNum);
 
             QDataStream reader(data);
 
-            Header header;
+            Header readHeader;
 
             QString message, from;
-            reader >> header >> from >> message;
+            reader >> readHeader >> from >> message;
+
+            if(!message.isEmpty())
+                needAck = true;
 
             emit newMessage(message, from);
+
         }
 
         m_ackNum ++;
+    }
+
+    if(needAck)
+    {
+        QByteArray sendBuffer;
+
+        QDataStream writer(&sendBuffer, QIODevice::WriteOnly);
+
+        // Create new header
+        Header writeHeader;
+
+        // Set the sequence number
+        writeHeader.seqNum = m_seqNum;
+        m_seqNum ++;
+
+        // Write the ack number
+        writeHeader.ackNum = m_ackNum;
+        writeHeader.flags = Acknowledgement;
+
+        // Send the packet with empty message
+        writer << writeHeader << QString() << QString();
     }
 }
 
