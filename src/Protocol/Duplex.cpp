@@ -15,9 +15,9 @@ void Duplex::handleAcknowledgement(qint32 ackNum)
 
 void Duplex::handleReceivedPackets()
 {
-    while(m_receiveBuffer.contains(m_seqNum)) {
+    while(m_receiveBuffer.contains(m_ackNum)) {
         {
-            QByteArray data = m_receiveBuffer.take(m_seqNum);
+            QByteArray data = m_receiveBuffer.take(m_ackNum);
 
             QDataStream reader(data);
 
@@ -29,7 +29,7 @@ void Duplex::handleReceivedPackets()
             emit newMessage(message, from);
         }
 
-        m_seqNum ++;
+        m_ackNum ++;
     }
 }
 
@@ -69,7 +69,6 @@ void Duplex::fetchPacket() {
 
     // Debug output
     qDebug() << "Received datagram from" << from_address << "on" << from_port;
-    qDebug() << datagram;
 
     {
       // Build the reader
@@ -81,6 +80,8 @@ void Duplex::fetchPacket() {
       Header header;
       // Read the message
       reader >> header;
+
+      qDebug() << "Seq:" << header.seqNum << "Ack:" << header.ackNum << "Flags:" << header.flags;
 
       if(header.flags.testFlag(Acknowledgement)) {
           handleAcknowledgement(header.ackNum);

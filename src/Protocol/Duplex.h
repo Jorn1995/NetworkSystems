@@ -27,7 +27,7 @@ class Duplex : public QObject
 public:
     explicit Duplex(QObject *parent = 0);
 
-    qint32 m_seqNum, m_ackNum;
+    qint32 m_seqNum = 0, m_ackNum = 0;
 //    Header m_header;
 
 signals:
