@@ -6,7 +6,7 @@
 namespace Protocol {
 namespace NetworkLayer {
 
-enum NextHeaderType {
+enum NextHeaderType : qint8 {
     Empty = 0,
     ReliableLink,
     DataPacket,

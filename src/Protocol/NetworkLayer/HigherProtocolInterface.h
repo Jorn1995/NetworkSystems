@@ -19,7 +19,7 @@ public:
     virtual ~HigherProtocolInterface();
 
 public:
-    virtual bool handlePacket(qint8 target, NextHeaderType nextHeader, const QByteArray & data) = 0;
+    virtual bool handlePacket(qint8 target, qint8 nextHeader, const QByteArray & data) = 0;
     void sendPacket(qint8 target, NextHeaderType nextHeader, const QByteArray & data);
 };
 

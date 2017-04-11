@@ -56,7 +56,7 @@ public:
   };
 
 public:
-  bool handlePacket(qint8 target, NetworkLayer::NextHeaderType nextHeader, const QByteArray &data);
+  bool handlePacket(qint8 target, qint8 nextHeader, const QByteArray &data);
 
 public:
   explicit ReliableLink(qint8 peer, NetworkLayer::Router *router,

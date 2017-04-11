@@ -93,7 +93,7 @@ void Router::fetchPacket() {
       reader >> payload;
 
       for(HigherProtocolInterface * listener : m_listeners) {
-          bool done = listener->handlePacket(header.sourceIp, payload);
+          bool done = listener->handlePacket(header.sourceIp, header.nextHeader, payload);
 
           if(done) {
               break;

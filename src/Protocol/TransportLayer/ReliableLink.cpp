@@ -34,7 +34,7 @@ ReliableLink::ReliableLink(qint8 peer, NetworkLayer::Router *router,
     // Await connection
     m_state = Connecting;
 
-    sendPacket(m_peer, synRequest);
+    sendPacket(m_peer, NetworkLayer::ReliableLink, synRequest);
   }
 }
 
@@ -92,7 +92,7 @@ void ReliableLink::handleReceivedPackets() {
   }
 }
 
-bool ReliableLink::handlePacket(qint8 target, NetworkLayer::NextHeaderType nextHeader, const QByteArray &data) {
+bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader, const QByteArray &data) {
     if(nextHeader != NetworkLayer::ReliableLink) {
         return false;
     }
@@ -141,7 +141,7 @@ bool ReliableLink::handlePacket(qint8 target, NetworkLayer::NextHeaderType nextH
                  << "Ack:" << header.ackNum << "Flags:" << header.flags;
       }
 
-      sendPacket(m_peer, synReply);
+      sendPacket(m_peer, NetworkLayer::ReliableLink, synReply);
 
       emit peerAccepted(m_peer);
 
@@ -169,7 +169,7 @@ bool ReliableLink::handlePacket(qint8 target, NetworkLayer::NextHeaderType nextH
       writer << header << QString() << QString();
     }
 
-    sendPacket(m_peer, ackReply);
+    sendPacket(m_peer, NetworkLayer::ReliableLink, ackReply);
 
     m_state = Connected;
 
@@ -198,7 +198,7 @@ bool ReliableLink::handlePacket(qint8 target, NetworkLayer::NextHeaderType nextH
 
 void ReliableLink::resendBuffer() {
   for (auto I = m_receiveBuffer.cbegin(); I != m_receiveBuffer.cend(); I++) {
-    sendPacket(m_peer, I.value());
+    sendPacket(m_peer, NetworkLayer::ReliableLink, I.value());
   }
 }
 
@@ -248,7 +248,7 @@ void ReliableLink::processBuffer() {
 
     m_sendBuffer.insert(header.seqNum, buffer);
     // Send the message to the group on the configured port
-    sendPacket(m_peer, buffer);
+    sendPacket(m_peer, NetworkLayer::ReliableLink, buffer);
 
     m_resendTimeout.setInterval(5000);
   }

@@ -12,7 +12,7 @@ ChatWidget::ChatWidget(QWidget *parent)
       m_router(new Protocol::NetworkLayer::Router(this)) {
 
   ui->setupUi(this);
-
+  ui->splitter->setSizes(QList<int>() << 1 << 2);
   m_listener = new Protocol::TransportLayer::ReliableLink(0, m_router, this);
   connect(m_listener, SIGNAL(peerAccepted(qint8)), this,
           SLOT(peerAccepted(qint8)));
