@@ -112,7 +112,7 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader,
 
   reader >> header;
 
-  qDebug() << "Header - Seq:" << header.seqNum << "Ack:" << header.ackNum
+  qDebug() << "Header received Seq:" << header.seqNum << "Ack:" << header.ackNum
            << "Flags:" << header.flags;
 
   // Currently listening
@@ -196,7 +196,6 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader,
       writer << replyHeader;
     }
 
-    // Send out the packet
     sendPacket(m_peer, NetworkLayer::ReliableLink, ackReply);
 
     // We are now connected
