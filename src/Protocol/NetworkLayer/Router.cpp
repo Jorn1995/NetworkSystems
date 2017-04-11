@@ -39,6 +39,7 @@ void Router::writePacket(qint8 target, NextHeaderType nextHeader, const QByteArr
         writer << header << payload;
     }
 
+    qDebug() << "[ROUTER]   Send datagram to "<< QHostAddress(GROUP);
     m_socket->writeDatagram(packet, QHostAddress(GROUP), 1337);
 }
 
@@ -75,7 +76,7 @@ void Router::fetchPacket() {
                            &from_port);
 
     // Debug output
-    qDebug() << "[ROUTER]   Received datagram from" << from_address << "on" << from_port;
+    qDebug() << "[ROUTER]   Received datagram from" << from_address;
 
     {
       // Build the reader
