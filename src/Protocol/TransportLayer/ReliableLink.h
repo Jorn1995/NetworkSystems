@@ -48,16 +48,20 @@ class ReliableLink : public QObject,
 
   qint32 newSeq() { return m_seqNum++; }
 
-protected:
-  virtual void readPayload(const QByteArray & payload);
-  void writePayload(const QByteArray & payload);
-
 public:
   struct Header {
     qint32 seqNum;
     qint32 ackNum;
     Flags flags;
   };
+
+private:
+  void sendPacket(Header header, QByteArray payload);
+  void sendPacket(Header header);
+
+protected:
+  virtual void readPayload(const QByteArray & payload);
+  void writePayload(const QByteArray & payload);
 
 public:
   bool handlePacket(qint8 target, qint8 nextHeader, const QByteArray &data);

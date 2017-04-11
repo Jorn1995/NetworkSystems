@@ -75,7 +75,7 @@ void Router::fetchPacket() {
                            &from_port);
 
     // Debug output
-    qDebug() << "Received datagram from" << from_address << "on" << from_port;
+    qDebug() << "[ROUTER]   Received datagram from" << from_address << "on" << from_port;
 
     {
       // Build the reader

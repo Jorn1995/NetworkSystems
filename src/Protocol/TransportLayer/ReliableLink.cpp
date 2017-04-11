@@ -13,7 +13,7 @@ ReliableLink::ReliableLink(qint8 peer, NetworkLayer::Router *router,
   connect(&m_resendTimeout, SIGNAL(timeout()), SLOT(resendBuffer()));
 
   if (peer != 0) {
-    qDebug() << "Link created with peer" << peer;
+    qDebug() << "[RELIABLE] Link created with peer" << peer;
     // Send out SYN packet
     Header header;
 
@@ -22,19 +22,10 @@ ReliableLink::ReliableLink(qint8 peer, NetworkLayer::Router *router,
 
     header.flags = Sync;
 
-    QByteArray synRequest;
-
-    // Write syn packet
-    {
-      QDataStream writer(&synRequest, QIODevice::WriteOnly);
-
-      writer << header;
-    }
-
     // Await connection
     m_state = Connecting;
 
-    sendPacket(m_peer, NetworkLayer::ReliableLink, synRequest);
+    sendPacket(header);
   }
 }
 
@@ -81,10 +72,6 @@ void ReliableLink::handleReceivedPackets() {
   }
 
   if (needAck) {
-    QByteArray sendBuffer;
-
-    QDataStream writer(&sendBuffer, QIODevice::WriteOnly);
-
     // Create new header
     Header writeHeader;
 
@@ -96,7 +83,7 @@ void ReliableLink::handleReceivedPackets() {
     writeHeader.flags = Acknowledgement;
 
     // Send the packet with empty message
-    writer << writeHeader;
+    sendPacket(writeHeader);
   }
 }
 
@@ -112,9 +99,6 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader,
 
   reader >> header;
 
-  qDebug() << "Header received Seq:" << header.seqNum << "Ack:" << header.ackNum
-           << "Flags:" << header.flags;
-
   // Currently listening
   if (m_peer == 0) {
     // Connection request received or connection acknowledgement received
@@ -123,12 +107,12 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader,
       if (header.flags.testFlag(Acknowledgement)) {
         // Connection acknowledgement received, ignore as we are listening for a
         // new connection
-        qDebug() << "Syn+Ack received through listener, ignored";
         return false;
       } else {
         Header replyHeader;
         // Connection request received, send a syn reply
-        qDebug() << "Syn received trough listener";
+        qDebug() << "[RELIABLE] Received (SYN) - Seq:" << header.seqNum << "Ack:" << header.ackNum
+                 << "Flags:" << header.flags;
 
         // Assign to the new peer
         m_peer = target;
@@ -143,20 +127,8 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader,
         // This is an Syn+Ack packet
         replyHeader.flags = Sync | Acknowledgement;
 
-        // Write out the packet
-        QByteArray synReply;
-        {
-          QDataStream writer(&synReply, QIODevice::WriteOnly);
-
-          writer << replyHeader;
-
-          qDebug() << "Writing reply: Seq:" << replyHeader.seqNum
-                   << "Ack:" << replyHeader.ackNum
-                   << "Flags:" << replyHeader.flags;
-        }
-
         // And send it
-        sendPacket(m_peer, NetworkLayer::ReliableLink, synReply);
+        sendPacket(replyHeader);
 
         // Notify interested objects that we accepted a peer and are no longer
         // listening
@@ -173,7 +145,8 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader,
     return false;
   } else if (m_state == Connecting && header.flags.testFlag(Sync) &&
              header.flags.testFlag(Acknowledgement)) {
-    qDebug() << "Seq+Ack received as sender";
+      qDebug() << "[RELIABLE] Received (SYN|ACK) - Seq:" << header.seqNum << "Ack:" << header.ackNum
+               << "Flags:" << header.flags;
 
     // Store the header
     Header replyHeader;
@@ -188,15 +161,8 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader,
     // This is an acknowledgement
     replyHeader.flags = Acknowledgement;
 
-    // Write out our reply
-    QByteArray ackReply;
-    {
-      QDataStream writer(&ackReply, QIODevice::WriteOnly);
-
-      writer << replyHeader;
-    }
-
-    sendPacket(m_peer, NetworkLayer::ReliableLink, ackReply);
+    // Send packet
+    sendPacket(replyHeader);
 
     // We are now connected
     m_state = Connected;
@@ -219,33 +185,59 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader,
 }
 
 void ReliableLink::resendBuffer() {
-  for (auto I = m_receiveBuffer.cbegin(); I != m_receiveBuffer.cend(); I++) {
-    sendPacket(m_peer, NetworkLayer::ReliableLink, I.value());
+  for (auto I = m_sendBuffer.cbegin(); I != m_sendBuffer.cend(); I++) {
+      qDebug() << "[RELIABLE] Resend - Seq:" << I.key();
+    NetworkLayer::HigherProtocolInterface::sendPacket(m_peer, NetworkLayer::ReliableLink, I.value());
   }
 }
 
 void ReliableLink::processBuffer() {
   while (m_databuffer.size()) {
     QByteArray payload = m_databuffer.dequeue();
-    QByteArray buffer;
 
     Header header;
 
     header.seqNum = newSeq();
+    sendPacket(header, payload);
+  }
+}
+
+void ReliableLink::sendPacket(ReliableLink::Header header, QByteArray payload)
+{
+    QByteArray buffer;
 
     {
-      QDataStream writer(&buffer, QIODevice::WriteOnly);
+    QDataStream writer(&buffer, QIODevice::WriteOnly);
 
-      writer << header;
-      writer.writeRawData(payload.data(), payload.size());
+    writer << header;
+    writer.writeRawData(payload.data(), payload.size());
     }
 
     m_sendBuffer.insert(header.seqNum, buffer);
-    // Send the message to the group on the configured port
-    sendPacket(m_peer, NetworkLayer::ReliableLink, buffer);
 
+    qDebug() << "[RELIABLE] Send - Seq:" << header.seqNum
+             << "Ack:" << header.ackNum
+             << "Flags:" << header.flags;
+
+    NetworkLayer::HigherProtocolInterface::sendPacket(m_peer, NetworkLayer::ReliableLink, buffer);
     m_resendTimeout.setInterval(5000);
-  }
+}
+
+void ReliableLink::sendPacket(ReliableLink::Header header)
+{
+    QByteArray buffer;
+
+    {
+    QDataStream writer(&buffer, QIODevice::WriteOnly);
+
+    writer << header;
+    }
+
+    qDebug() << "[RELIABLE] Send - Seq:" << header.seqNum
+             << "Ack:" << header.ackNum
+             << "Flags:" << header.flags;
+
+    NetworkLayer::HigherProtocolInterface::sendPacket(m_peer, NetworkLayer::ReliableLink, buffer);
 }
 
 void ReliableLink::readPayload(const QByteArray &payload) {
