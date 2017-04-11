@@ -103,7 +103,7 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader, const QByteArray
 
   reader >> header;
 
-  qDebug() << "Header - Seq:" << header.seqNum << "Ack:" << header.ackNum
+  qDebug() << "Header received Seq:" << header.seqNum << "Ack:" << header.ackNum
            << "Flags:" << header.flags;
 
   // Currently listening
@@ -173,6 +173,9 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader, const QByteArray
       writer << replyHeader << QString() << QString();
     }
 
+    qDebug() << "Writing reply: Seq:" << replyHeader.seqNum
+             << "Ack:" << replyHeader.ackNum << "Flags:" << replyHeader.flags;
+
     sendPacket(m_peer, NetworkLayer::ReliableLink, ackReply);
 
     m_state = Connected;
@@ -221,7 +224,6 @@ void ReliableLink::sendMessage(QString message, QString from) {
 
     // Update header
     header.seqNum = m_seqNum;
-    m_seqNum++;
 
     // Possibly send acknowledgement ?
     header.ackNum = m_ackNum;
