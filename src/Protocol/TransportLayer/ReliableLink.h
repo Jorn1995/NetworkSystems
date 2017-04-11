@@ -51,8 +51,8 @@ class ReliableLink : public QObject,
 
 public:
   struct Header {
-    qint32 seqNum;
-    qint32 ackNum;
+    qint32 seqNum = 0;
+    qint32 ackNum = 0;
     Flags flags;
   };
 
