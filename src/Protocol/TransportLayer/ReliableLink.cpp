@@ -100,39 +100,53 @@ bool ReliableLink::handlePacket(qint8 target, const QByteArray &data) {
 
   reader >> header;
 
+  qDebug() << "Header - Seq:" << header.seqNum << "Ack:" << header.ackNum
+           << "Flags:" << header.flags;
+
+  // Currently listening
   if (m_peer == 0) {
+    // Connection request received or connection acknowledgement received
     if (header.flags.testFlag(Sync)) {
-      qDebug() << "Sync received";
 
-      m_peer = target;
+      if (header.flags.testFlag(Acknowledgement)) {
+        // Connection acknowledgement received, ignore
+        return false;
+      } else {
+        // Connection request received, send a syn reply
+        qDebug() << "Sync received";
 
-      m_ackNum = header.seqNum;
-      header.ackNum = m_ackNum;
-      header.seqNum = m_seqNum;
-      m_seqNum++;
+        m_peer = target;
 
-      header.flags |= Acknowledgement;
+        m_ackNum = header.seqNum;
+
+        header.ackNum = m_ackNum;
+        header.seqNum = m_seqNum;
+        m_seqNum++;
+
+        header.flags |= Acknowledgement;
+      }
+
+      QByteArray synReply;
+
+      {
+        QDataStream writer(&synReply, QIODevice::WriteOnly);
+
+        writer << header << QString() << QString();
+
+        qDebug() << "Writing reply: Seq:" << header.seqNum
+                 << "Ack:" << header.ackNum << "Flags:" << header.flags;
+      }
+
+      sendPacket(m_peer, synReply);
+
+      emit peerAccepted(m_peer);
+
+      m_state = Connected;
+
+      return true;
     }
-
-    QByteArray synReply;
-
-    {
-      QDataStream writer(&synReply, QIODevice::WriteOnly);
-
-      writer << header << QString() << QString();
-
-      qDebug() << "Writing reply: Seq:" << header.seqNum
-               << "Ack:" << header.ackNum;
-    }
-
-    sendPacket(m_peer, synReply);
-
-    emit peerAccepted(m_peer);
-
-    m_state = Connected;
-
-    return true;
   } else if (m_peer != target) {
+    // We're not listening and this is not who we are talking to, ignore
     return false;
   } else if (m_state == Connecting && header.flags.testFlag(Sync) &&
              header.flags.testFlag(Acknowledgement)) {
@@ -154,6 +168,8 @@ bool ReliableLink::handlePacket(qint8 target, const QByteArray &data) {
     sendPacket(m_peer, ackReply);
 
     m_state = Connected;
+
+    processBuffer();
 
     return true;
   }
@@ -183,6 +199,7 @@ void ReliableLink::resendBuffer() {
 }
 
 void ReliableLink::sendMessage(QString message, QString from) {
+
   // Create buffer for the message
   QByteArray buffer;
   Header header;
@@ -206,13 +223,24 @@ void ReliableLink::sendMessage(QString message, QString from) {
     writer << header << from << message;
   }
 
-  m_sendBuffer.insert(header.seqNum, buffer);
-  // Send the message to the group on the configured port
-  sendPacket(m_peer, buffer);
+  m_databuffer << buffer;
 
-  m_resendTimeout.setInterval(5000);
+  if (m_state == Connected) {
+    processBuffer();
+  }
 
   emit newMessage(message, from);
+}
+
+void ReliableLink::processBuffer() {
+  while (m_databuffer.size()) {
+    QByteArray buffer = m_databuffer.dequeue();
+    m_sendBuffer.insert(header.seqNum, buffer);
+    // Send the message to the group on the configured port
+    sendPacket(m_peer, buffer);
+
+    m_resendTimeout.setInterval(5000);
+  }
 }
 
 QDataStream &operator<<(QDataStream &stream,

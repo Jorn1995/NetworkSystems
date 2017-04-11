@@ -4,6 +4,7 @@
 #include <QMap>
 #include <QObject>
 #include <QTimer>
+#include <QQueue>
 
 #include "Flag.h"
 
@@ -16,58 +17,63 @@ class Router;
 
 namespace TransportLayer {
 
-class ReliableLink : public QObject, public NetworkLayer::HigherProtocolInterface
-{
-    Q_OBJECT
+class ReliableLink : public QObject,
+                     public NetworkLayer::HigherProtocolInterface {
+  Q_OBJECT
 
-    // Transmission buffers
-    QMap<qint32, QByteArray> m_sendBuffer; // To retransmit possibly
-    QMap<qint32, QByteArray> m_receiveBuffer; // To sort
+  // Transmission buffers
+  QMap<qint32, QByteArray> m_sendBuffer;    // To retransmit possibly
+  QMap<qint32, QByteArray> m_receiveBuffer; // To sort
 
-    // Link tracking
-    qint8 m_peer;
-    enum State {
-        Disconnected = 0,
-        Connecting,
-        Connected,
-    } m_state;
+  QQueue<QByteArray> m_databuffer;
 
-    // Sequence number tracking
-    qint32 m_seqNum = 0, m_ackNum = 0;
+  // Link tracking
+  qint8 m_peer;
+  enum State {
+    Disconnected = 0,
+    Connecting,
+    Connected,
+  } m_state;
 
-    // Timers
-    QTimer m_resendTimeout;
+  // Sequence number tracking
+  qint32 m_seqNum = 0, m_ackNum = 0;
 
-    void handleAcknowledgement(qint32 ackNum);
-    void handleReceivedPackets();
+  // Timers
+  QTimer m_resendTimeout;
 
-public:
-    struct Header
-    {
-        qint32 seqNum;
-        qint32 ackNum;
-        Flags  flags;
-    };
+  void handleAcknowledgement(qint32 ackNum);
+  void handleReceivedPackets();
+
+  void processBuffer();
 
 public:
-    bool handlePacket(qint8 target, const QByteArray & data);
+  struct Header {
+    qint32 seqNum;
+    qint32 ackNum;
+    Flags flags;
+  };
 
 public:
-    explicit ReliableLink(qint8 peer, NetworkLayer::Router *router, QObject *parent = 0);
+  bool handlePacket(qint8 target, const QByteArray &data);
+
+public:
+  explicit ReliableLink(qint8 peer, NetworkLayer::Router *router,
+                        QObject *parent = 0);
 
 signals:
-    void newMessage(QString message, QString from);
-    void peerAccepted(qint8 address);
+  void newMessage(QString message, QString from);
+  void peerAccepted(qint8 address);
 
 private slots:
-    void resendBuffer();
+  void resendBuffer();
 
 public slots:
-    void sendMessage(QString message, QString from);
+  void sendMessage(QString message, QString from);
 };
 
-QDataStream & operator<< (QDataStream & stream, const ReliableLink::Header & object);
-QDataStream & operator>> (QDataStream & stream, ReliableLink::Header & object);
+QDataStream &operator<<(QDataStream &stream,
+                        const ReliableLink::Header &object);
+QDataStream &operator>>(QDataStream &stream, ReliableLink::Header &object);
 
 } // namespace TransportLayer
 } // namespace Protocol
