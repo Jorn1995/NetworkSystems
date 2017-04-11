@@ -48,6 +48,10 @@ class ReliableLink : public QObject,
 
   qint32 newSeq() { return m_seqNum++; }
 
+protected:
+  virtual void readPayload(const QByteArray & payload);
+  void writePayload(const QByteArray & payload);
+
 public:
   struct Header {
     qint32 seqNum;
@@ -63,14 +67,10 @@ public:
                         QObject *parent = 0);
 
 signals:
-  void newMessage(QString message, QString from);
   void peerAccepted(qint8 address);
 
 private slots:
   void resendBuffer();
-
-public slots:
-  void sendMessage(QString message, QString from);
 };
 
 QDataStream &operator<<(QDataStream &stream,

@@ -28,7 +28,7 @@ ReliableLink::ReliableLink(qint8 peer, NetworkLayer::Router *router,
     {
       QDataStream writer(&synRequest, QIODevice::WriteOnly);
 
-      writer << header << QString() << QString();
+      writer << header;
     }
 
     // Await connection
@@ -60,13 +60,21 @@ void ReliableLink::handleReceivedPackets() {
 
       Header readHeader;
 
-      QString message, from;
-      reader >> readHeader >> from >> message;
+      reader >> readHeader;
 
-      if (!message.isEmpty())
+      // Make it certainly big enough
+      QByteArray payload(data.size(), 0);
+
+      // Read the remaining data
+      int read = reader.readRawData(payload.data(), payload.size());
+
+      // and trim the excess
+      payload.resize(read);
+
+      if (!payload.isEmpty())
         needAck = true;
 
-      emit newMessage(message, from);
+      readPayload(payload);
     }
 
     m_ackNum++;
@@ -88,14 +96,15 @@ void ReliableLink::handleReceivedPackets() {
     writeHeader.flags = Acknowledgement;
 
     // Send the packet with empty message
-    writer << writeHeader << QString() << QString();
+    writer << writeHeader;
   }
 }
 
-bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader, const QByteArray &data) {
-    if(nextHeader != NetworkLayer::ReliableLink) {
-        return false;
-    }
+bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader,
+                                const QByteArray &data) {
+  if (nextHeader != NetworkLayer::ReliableLink) {
+    return false;
+  }
 
   QDataStream reader(data);
 
@@ -112,82 +121,92 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader, const QByteArray
     if (header.flags.testFlag(Sync)) {
 
       if (header.flags.testFlag(Acknowledgement)) {
-        // Connection acknowledgement received, ignore
+        // Connection acknowledgement received, ignore as we are listening for a
+        // new connection
+        qDebug() << "Syn+Ack received through listener, ignored";
         return false;
       } else {
-          Header replyHeader;
+        Header replyHeader;
         // Connection request received, send a syn reply
-        qDebug() << "Sync received";
+        qDebug() << "Syn received trough listener";
 
+        // Assign to the new peer
         m_peer = target;
 
-
+        // Set the ack counter to the peer seq number
         m_ackNum = replyHeader.seqNum;
 
+        // Write the ack and our seq counter
         replyHeader.ackNum = m_ackNum;
         replyHeader.seqNum = newSeq();
 
+        // This is an Syn+Ack packet
         replyHeader.flags = Sync | Acknowledgement;
 
+        // Write out the packet
         QByteArray synReply;
-
         {
           QDataStream writer(&synReply, QIODevice::WriteOnly);
 
-          writer << replyHeader << QString() << QString();
+          writer << replyHeader;
 
           qDebug() << "Writing reply: Seq:" << replyHeader.seqNum
-                   << "Ack:" << replyHeader.ackNum << "Flags:" << replyHeader.flags;
+                   << "Ack:" << replyHeader.ackNum
+                   << "Flags:" << replyHeader.flags;
         }
 
+        // And send it
         sendPacket(m_peer, NetworkLayer::ReliableLink, synReply);
 
+        // Notify interested objects that we accepted a peer and are no longer
+        // listening
         emit peerAccepted(m_peer);
 
+        // We are now in connected state
         m_state = Connected;
 
         return true;
-      }
-
-    }
+      } // end !Acknowledgement
+    }   // end Sync
   } else if (m_peer != target) {
     // We're not listening and this is not who we are talking to, ignore
     return false;
   } else if (m_state == Connecting && header.flags.testFlag(Sync) &&
              header.flags.testFlag(Acknowledgement)) {
-    qDebug() << "Seq acknowledged";
+    qDebug() << "Seq+Ack received as sender";
 
+    // Store the header
     Header replyHeader;
 
+    // Initialize the ack number to their seq number
     m_ackNum = header.seqNum;
+
+    // Write the ack and our seq number
     replyHeader.ackNum = m_ackNum;
     replyHeader.seqNum = newSeq();
 
+    // This is an acknowledgement
     replyHeader.flags = Acknowledgement;
 
+    // Write out our reply
     QByteArray ackReply;
-
     {
       QDataStream writer(&ackReply, QIODevice::WriteOnly);
 
-      writer << replyHeader << QString() << QString();
+      writer << replyHeader;
     }
 
+    // Send out the packet
     sendPacket(m_peer, NetworkLayer::ReliableLink, ackReply);
 
+    // We are now connected
     m_state = Connected;
 
+    // Process any packets in our early send buffer
     processBuffer();
 
     return true;
   }
-
-  QString message, from;
-
-  reader >> from >> message;
-
-  qDebug() << "Seq:" << header.seqNum << "Ack:" << header.ackNum
-           << "Flags:" << header.flags;
 
   if (header.flags.testFlag(Acknowledgement)) {
     handleAcknowledgement(header.ackNum);
@@ -206,55 +225,40 @@ void ReliableLink::resendBuffer() {
   }
 }
 
-void ReliableLink::sendMessage(QString message, QString from) {
-
-  // Create buffer for the message
-  QByteArray buffer;
-  Header header;
-
-  {
-    // Create a binary writer on the buffer
-    QDataStream writer(&buffer, QIODevice::WriteOnly);
-
-    // Ensure a stable version
-    writer.setVersion(QDataStream::Qt_4_0);
-
-    // Update header
-    header.seqNum = m_seqNum;
-    m_seqNum++;
-
-    // Possibly send acknowledgement ?
-    header.ackNum = m_ackNum;
-    header.flags = Acknowledgement;
-
-    // Write our the typed message
-    writer << header << from << message;
-  }
-
-  m_databuffer << buffer;
-
-  if (m_state == Connected) {
-    processBuffer();
-  }
-
-  emit newMessage(message, from);
-}
-
 void ReliableLink::processBuffer() {
   while (m_databuffer.size()) {
-    QByteArray buffer = m_databuffer.dequeue();
+    QByteArray payload = m_databuffer.dequeue();
+    QByteArray buffer;
 
     Header header;
 
-    QDataStream reader(buffer);
+    header.seqNum = newSeq();
 
-    reader >> header;
+    {
+      QDataStream writer(&buffer, QIODevice::WriteOnly);
+
+      writer << header;
+      writer.writeRawData(payload.data(), payload.size());
+    }
 
     m_sendBuffer.insert(header.seqNum, buffer);
     // Send the message to the group on the configured port
     sendPacket(m_peer, NetworkLayer::ReliableLink, buffer);
 
     m_resendTimeout.setInterval(5000);
+  }
+}
+
+void ReliableLink::readPayload(const QByteArray &payload) {
+  Q_UNUSED(payload)
+  // No Op
+}
+
+void ReliableLink::writePayload(const QByteArray &payload) {
+  m_databuffer << payload;
+
+  if (m_state == Connected) {
+    processBuffer();
   }
 }
 

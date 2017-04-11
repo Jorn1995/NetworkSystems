@@ -12,16 +12,16 @@ namespace Protocol {
 namespace NetworkLayer {
 class Router;
 }
-namespace TransportLayer {
-class ReliableLink;
+namespace ApplicationLayer {
+class ChatLink;
 }
 }
 
 class ChatWidget : public QWidget {
   Q_OBJECT
 
-    QMap<qint8,Protocol::TransportLayer::ReliableLink*> m_connections;
-    Protocol::TransportLayer::ReliableLink *m_listener;
+    QMap<qint8,Protocol::ApplicationLayer::ChatLink*> m_connections;
+    Protocol::ApplicationLayer::ChatLink *m_listener;
 
 public:
   explicit ChatWidget(QWidget *parent = 0);

@@ -18,7 +18,8 @@ SOURCES += main.cpp\
     Protocol/NetworkLayer/Router.cpp \
     Protocol/TransportLayer/ReliableLink.cpp \
     Protocol/NetworkLayer/HigherProtocolInterface.cpp \
-    Protocol/NetworkLayer/IpHeader.cpp
+    Protocol/NetworkLayer/IpHeader.cpp \
+    Protocol/ApplicationLayer/ChatLink.cpp
 
 HEADERS  += ChatWidget.h \
     config.h.local \
@@ -28,7 +29,8 @@ HEADERS  += ChatWidget.h \
     Protocol/TransportLayer/ReliableLink.h \
     Protocol/NetworkLayer/HigherProtocolInterface.h \
     Protocol/NetworkLayer/Router.h \
-    Protocol/NetworkLayer/IpHeader.h
+    Protocol/NetworkLayer/IpHeader.h \
+    Protocol/ApplicationLayer/ChatLink.h
 
 OTHER_FILES +=
 

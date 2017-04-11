@@ -5,7 +5,7 @@
 
 #include <config.h>
 
-#include <Protocol/TransportLayer/ReliableLink.h>
+#include <Protocol/ApplicationLayer/ChatLink.h>
 
 ChatWidget::ChatWidget(QWidget *parent)
     : QWidget(parent), ui(new Ui::ChatWidget),
@@ -13,7 +13,7 @@ ChatWidget::ChatWidget(QWidget *parent)
 
   ui->setupUi(this);
   ui->splitter->setSizes(QList<int>() << 1 << 2);
-  m_listener = new Protocol::TransportLayer::ReliableLink(0, m_router, this);
+  m_listener = new Protocol::ApplicationLayer::ChatLink(0, m_router, this);
   connect(m_listener, SIGNAL(peerAccepted(qint8)), this,
           SLOT(peerAccepted(qint8)));
   connect(m_listener, SIGNAL(newMessage(QString, QString)),
@@ -33,7 +33,7 @@ void ChatWidget::peerAccepted(qint8 peer) {
   disconnect(m_listener, SIGNAL(peerAccepted(qint8)), this,
              SLOT(peerAccepted(qint8)));
 
-  m_listener = new Protocol::TransportLayer::ReliableLink(0, m_router, this);
+  m_listener = new Protocol::ApplicationLayer::ChatLink(0, m_router, this);
   connect(m_listener, SIGNAL(peerAccepted(qint8)), SLOT(peerAccepted(qint8)));
 }
 
@@ -42,12 +42,11 @@ void ChatWidget::sendMessage() {
   if (!message.isEmpty()) {
     qint8 target = qint8(ui->target->value());
 
-    Protocol::TransportLayer::ReliableLink *link = nullptr;
-    if (m_connections.contains(target)) {
-      link = m_connections.value(target);
-    } else {
+    Protocol::ApplicationLayer::ChatLink *link = m_connections.value(target, nullptr);
+
+    if (!link) {
       link = m_connections[target] =
-          new Protocol::TransportLayer::ReliableLink(target, m_router, this);
+          new Protocol::ApplicationLayer::ChatLink(target, m_router, this);
       connect(link, SIGNAL(newMessage(QString, QString)),
               SLOT(receivedMessage(QString, QString)));
     }
