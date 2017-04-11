@@ -136,8 +136,8 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader, const QByteArray
 
           writer << replyHeader << QString() << QString();
 
-          qDebug() << "Writing reply: Seq:" << header.seqNum
-                   << "Ack:" << header.ackNum << "Flags:" << header.flags;
+          qDebug() << "Writing reply: Seq:" << replyHeader.seqNum
+                   << "Ack:" << replyHeader.ackNum << "Flags:" << replyHeader.flags;
         }
 
         sendPacket(m_peer, NetworkLayer::ReliableLink, synReply);
@@ -157,17 +157,20 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader, const QByteArray
              header.flags.testFlag(Acknowledgement)) {
     qDebug() << "Seq acknowledged";
 
+    Header replyHeader;
+
     m_ackNum = header.seqNum;
-    header.ackNum = m_ackNum;
-    header.seqNum = m_seqNum;
-    m_seqNum++;
+    replyHeader.ackNum = m_ackNum;
+    replyHeader.seqNum = newSeq();
+
+    replyHeader.flags = Acknowledgement;
 
     QByteArray ackReply;
 
     {
       QDataStream writer(&ackReply, QIODevice::WriteOnly);
 
-      writer << header << QString() << QString();
+      writer << replyHeader << QString() << QString();
     }
 
     sendPacket(m_peer, NetworkLayer::ReliableLink, ackReply);
