@@ -19,7 +19,8 @@ SOURCES += main.cpp\
     Protocol/TransportLayer/ReliableLink.cpp \
     Protocol/NetworkLayer/HigherProtocolInterface.cpp \
     Protocol/NetworkLayer/IpHeader.cpp \
-    Protocol/ApplicationLayer/ChatLink.cpp
+    Protocol/ApplicationLayer/ChatLink.cpp \
+    Protocol/TransportLayer/Flag.cpp
 
 HEADERS  += ChatWidget.h \
     config.h.local \
