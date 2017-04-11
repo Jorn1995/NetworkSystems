@@ -3,6 +3,8 @@
 
 #include <QByteArray>
 
+#include "IpHeader.h"
+
 namespace Protocol {
 namespace NetworkLayer {
 
@@ -17,8 +19,8 @@ public:
     virtual ~HigherProtocolInterface();
 
 public:
-    virtual bool handlePacket(qint8 target, const QByteArray & data) = 0;
-    void sendPacket(qint8 target, const QByteArray & data);
+    virtual bool handlePacket(qint8 target, NextHeaderType nextHeader, const QByteArray & data) = 0;
+    void sendPacket(qint8 target, NextHeaderType nextHeader, const QByteArray & data);
 };
 
 }

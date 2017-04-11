@@ -18,7 +18,7 @@ ReliableLink::ReliableLink(qint8 peer, NetworkLayer::Router *router,
     Header header;
 
     header.ackNum = m_ackNum;
-    header.seqNum = m_seqNum;
+    header.seqNum = newSeq();
 
     header.flags = Sync;
 
@@ -81,11 +81,10 @@ void ReliableLink::handleReceivedPackets() {
     Header writeHeader;
 
     // Set the sequence number
-    writeHeader.seqNum = m_seqNum;
-    m_seqNum++;
+    writeHeader.seqNum = newSeq();
 
     // Write the ack number
-    writeHeader.ackNum = m_ackNum;
+    writeHeader.ackNum = m_ackNum - 1; // Compensate for while loop
     writeHeader.flags = Acknowledgement;
 
     // Send the packet with empty message
@@ -93,7 +92,11 @@ void ReliableLink::handleReceivedPackets() {
   }
 }
 
-bool ReliableLink::handlePacket(qint8 target, const QByteArray &data) {
+bool ReliableLink::handlePacket(qint8 target, NetworkLayer::NextHeaderType nextHeader, const QByteArray &data) {
+    if(nextHeader != NetworkLayer::ReliableLink) {
+        return false;
+    }
+
   QDataStream reader(data);
 
   Header header;
@@ -117,13 +120,14 @@ bool ReliableLink::handlePacket(qint8 target, const QByteArray &data) {
 
         m_peer = target;
 
-        m_ackNum = header.seqNum;
+        Header replyHeader;
 
-        header.ackNum = m_ackNum;
-        header.seqNum = m_seqNum;
-        m_seqNum++;
+        m_ackNum = replyHeader.seqNum;
 
-        header.flags |= Acknowledgement;
+        replyHeader.ackNum = m_ackNum;
+        replyHeader.seqNum = newSeq();
+
+        replyHeader.flags |= Acknowledgement;
       }
 
       QByteArray synReply;

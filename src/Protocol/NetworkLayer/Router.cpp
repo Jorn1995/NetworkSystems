@@ -18,12 +18,13 @@ void Router::deregisterHigherProtocol(HigherProtocolInterface *self)
     m_listeners.removeAll(self);
 }
 
-void Router::writePacket(qint8 target, const QByteArray &payload)
+void Router::writePacket(qint8 target, NextHeaderType nextHeader, const QByteArray &payload)
 {
     IpHeader header;
 
     header.sourceIp = MY_NODE_IP;
     header.targetIp = target;
+    header.nextHeader = nextHeader;
 
     header.hops = 0;
     header.ttl = 8;

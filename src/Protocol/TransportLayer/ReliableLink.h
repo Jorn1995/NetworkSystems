@@ -46,6 +46,8 @@ class ReliableLink : public QObject,
 
   void processBuffer();
 
+  qint32 newSeq() { return m_seqNum++; }
+
 public:
   struct Header {
     qint32 seqNum;
@@ -54,7 +56,7 @@ public:
   };
 
 public:
-  bool handlePacket(qint8 target, const QByteArray &data);
+  bool handlePacket(qint8 target, NetworkLayer::NextHeaderType nextHeader, const QByteArray &data);
 
 public:
   explicit ReliableLink(qint8 peer, NetworkLayer::Router *router,

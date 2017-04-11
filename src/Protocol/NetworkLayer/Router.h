@@ -7,6 +7,7 @@
 #include <QTimer>
 #include "../TransportLayer/Flag.h"
 
+#include "IpHeader.h"
 
 #include "HigherProtocolInterface.h"
 
@@ -37,7 +38,7 @@ protected:
     void registerHigherProtocol(HigherProtocolInterface * self);
     void deregisterHigherProtocol(HigherProtocolInterface * self);
 
-    void writePacket(qint8 target, const QByteArray & payload);
+    void writePacket(qint8 target, NextHeaderType nextHeader, const QByteArray & payload);
 
 private slots:
     void fetchPacket();
