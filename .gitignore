@@ -1,2 +1,5 @@
+*.o
 *.pro.user
 *.local
+moc_*
+Makefile

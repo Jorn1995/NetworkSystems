@@ -235,6 +235,13 @@ void ReliableLink::sendMessage(QString message, QString from) {
 void ReliableLink::processBuffer() {
   while (m_databuffer.size()) {
     QByteArray buffer = m_databuffer.dequeue();
+
+    Header header;
+
+    QDataStream reader(buffer);
+
+    reader >> header;
+
     m_sendBuffer.insert(header.seqNum, buffer);
     // Send the message to the group on the configured port
     sendPacket(m_peer, buffer);
