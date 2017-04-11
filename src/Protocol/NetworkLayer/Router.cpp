@@ -8,6 +8,11 @@ namespace Protocol {
 namespace NetworkLayer {
 
 
+void Router::registerHigherProtocol(HigherProtocolInterface *self)
+{
+    m_listeners.append(self);
+}
+
 void Router::deregisterHigherProtocol(HigherProtocolInterface *self)
 {
     m_listeners.removeAll(self);
@@ -32,6 +37,8 @@ void Router::writePacket(qint8 target, const QByteArray &payload)
 
         writer << header << payload;
     }
+
+    m_socket->writeDatagram(packet, QHostAddress(GROUP), 1337);
 }
 
 Router::Router(QObject *parent) : QObject(parent) , m_socket(new QUdpSocket(this))

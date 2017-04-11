@@ -34,6 +34,7 @@ class Router : public QObject
 
 protected:
     // Higher Protocol callbacks
+    void registerHigherProtocol(HigherProtocolInterface * self);
     void deregisterHigherProtocol(HigherProtocolInterface * self);
 
     void writePacket(qint8 target, const QByteArray & payload);
