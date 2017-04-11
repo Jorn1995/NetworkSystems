@@ -47,6 +47,7 @@ class ReliableLink : public QObject,
   void processBuffer();
 
   qint32 newSeq() { return m_seqNum++; }
+  qint32 newAck() { return m_ackNum++; }
 
 public:
   struct Header {

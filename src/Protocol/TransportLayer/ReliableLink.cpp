@@ -103,7 +103,6 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader,
   if (m_peer == 0) {
     // Connection request received or connection acknowledgement received
     if (header.flags.testFlag(Sync)) {
-
       if (header.flags.testFlag(Acknowledgement)) {
         // Connection acknowledgement received, ignore as we are listening for a
         // new connection
@@ -111,8 +110,8 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader,
       } else {
         Header replyHeader;
         // Connection request received, send a syn reply
-        qDebug() << "[RELIABLE] Received (SYN) - Seq:" << header.seqNum << "Ack:" << header.ackNum
-                 << "Flags:" << header.flags;
+        qDebug() << "[RELIABLE] Received (SYN) - Seq:" << header.seqNum
+                 << "Ack:" << header.ackNum << "Flags:" << header.flags;
 
         // Assign to the new peer
         m_peer = target;
@@ -121,7 +120,7 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader,
         m_ackNum = replyHeader.seqNum;
 
         // Write the ack and our seq counter
-        replyHeader.ackNum = m_ackNum;
+        replyHeader.ackNum = newAck();
         replyHeader.seqNum = newSeq();
 
         // This is an Syn+Ack packet
@@ -138,15 +137,15 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader,
         m_state = Connected;
 
         return true;
-      } // end !Acknowledgement
-    }   // end Sync
+      }
+    }
   } else if (m_peer != target) {
-    // We're not listening and this is not who we are talking to, ignore
     return false;
   } else if (m_state == Connecting && header.flags.testFlag(Sync) &&
              header.flags.testFlag(Acknowledgement)) {
-      qDebug() << "[RELIABLE] Received (SYN|ACK) - Seq:" << header.seqNum << "Ack:" << header.ackNum
-               << "Flags:" << TransportLayer::flagDebug(header.flags);
+    qDebug() << "[RELIABLE] Received (SYN|ACK) - Seq:" << header.seqNum
+             << "Ack:" << header.ackNum
+             << "Flags:" << TransportLayer::flagDebug(header.flags);
 
     // Store the header
     Header replyHeader;
@@ -155,7 +154,7 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader,
     m_ackNum = header.seqNum;
 
     // Write the ack and our seq number
-    replyHeader.ackNum = m_ackNum;
+    replyHeader.ackNum = newAck();
     replyHeader.seqNum = newSeq();
 
     // This is an acknowledgement
@@ -171,23 +170,29 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader,
     processBuffer();
 
     return true;
+  } else {
+    qDebug() << "[RELIABLE] Received - Seq:" << header.seqNum
+             << "Ack:" << header.ackNum
+             << "Flags:" << TransportLayer::flagDebug(header.flags);
+
+    if (header.flags.testFlag(Acknowledgement)) {
+      handleAcknowledgement(header.ackNum);
+    }
+
+    m_receiveBuffer.insert(header.seqNum, data);
+
+    handleReceivedPackets();
+
+    return true;
   }
-
-  if (header.flags.testFlag(Acknowledgement)) {
-    handleAcknowledgement(header.ackNum);
-  }
-
-  m_receiveBuffer.insert(header.seqNum, data);
-
-  handleReceivedPackets();
-
-  return true;
+  return false;
 }
 
 void ReliableLink::resendBuffer() {
   for (auto I = m_sendBuffer.cbegin(); I != m_sendBuffer.cend(); I++) {
-      qDebug() << "[RELIABLE] Resend - Seq:" << I.key();
-    NetworkLayer::HigherProtocolInterface::sendPacket(m_peer, NetworkLayer::ReliableLink, I.value());
+    qDebug() << "[RELIABLE] Resend - Seq:" << I.key();
+    NetworkLayer::HigherProtocolInterface::sendPacket(
+        m_peer, NetworkLayer::ReliableLink, I.value());
   }
 }
 
@@ -202,42 +207,42 @@ void ReliableLink::processBuffer() {
   }
 }
 
-void ReliableLink::sendPacket(ReliableLink::Header header, QByteArray payload)
-{
-    QByteArray buffer;
+void ReliableLink::sendPacket(ReliableLink::Header header, QByteArray payload) {
+  QByteArray buffer;
 
-    {
+  {
     QDataStream writer(&buffer, QIODevice::WriteOnly);
 
     writer << header;
     writer.writeRawData(payload.data(), payload.size());
-    }
+  }
 
-    m_sendBuffer.insert(header.seqNum, buffer);
+  m_sendBuffer.insert(header.seqNum, buffer);
 
-    qDebug() << "[RELIABLE] Send - Seq:" << header.seqNum
-             << "Ack:" << header.ackNum
-             << "Flags:" << TransportLayer::flagDebug(header.flags);
+  qDebug() << "[RELIABLE] Send - Seq:" << header.seqNum
+           << "Ack:" << header.ackNum
+           << "Flags:" << TransportLayer::flagDebug(header.flags);
 
-    NetworkLayer::HigherProtocolInterface::sendPacket(m_peer, NetworkLayer::ReliableLink, buffer);
-    m_resendTimeout.setInterval(5000);
+  NetworkLayer::HigherProtocolInterface::sendPacket(
+      m_peer, NetworkLayer::ReliableLink, buffer);
+  m_resendTimeout.setInterval(5000);
 }
 
-void ReliableLink::sendPacket(ReliableLink::Header header)
-{
-    QByteArray buffer;
+void ReliableLink::sendPacket(ReliableLink::Header header) {
+  QByteArray buffer;
 
-    {
+  {
     QDataStream writer(&buffer, QIODevice::WriteOnly);
 
     writer << header;
-    }
+  }
 
-    qDebug() << "[RELIABLE] Send - Seq:" << header.seqNum
-             << "Ack:" << header.ackNum
-             << "Flags:" << TransportLayer::flagDebug(header.flags);
+  qDebug() << "[RELIABLE] Send - Seq:" << header.seqNum
+           << "Ack:" << header.ackNum
+           << "Flags:" << TransportLayer::flagDebug(header.flags);
 
-    NetworkLayer::HigherProtocolInterface::sendPacket(m_peer, NetworkLayer::ReliableLink, buffer);
+  NetworkLayer::HigherProtocolInterface::sendPacket(
+      m_peer, NetworkLayer::ReliableLink, buffer);
 }
 
 void ReliableLink::readPayload(const QByteArray &payload) {
