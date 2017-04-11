@@ -115,39 +115,40 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader, const QByteArray
         // Connection acknowledgement received, ignore
         return false;
       } else {
+          Header replyHeader;
         // Connection request received, send a syn reply
         qDebug() << "Sync received";
 
         m_peer = target;
 
-        Header replyHeader;
 
         m_ackNum = replyHeader.seqNum;
 
         replyHeader.ackNum = m_ackNum;
         replyHeader.seqNum = newSeq();
 
-        replyHeader.flags |= Acknowledgement;
+        replyHeader.flags = Sync | Acknowledgement;
+
+        QByteArray synReply;
+
+        {
+          QDataStream writer(&synReply, QIODevice::WriteOnly);
+
+          writer << replyHeader << QString() << QString();
+
+          qDebug() << "Writing reply: Seq:" << header.seqNum
+                   << "Ack:" << header.ackNum << "Flags:" << header.flags;
+        }
+
+        sendPacket(m_peer, NetworkLayer::ReliableLink, synReply);
+
+        emit peerAccepted(m_peer);
+
+        m_state = Connected;
+
+        return true;
       }
 
-      QByteArray synReply;
-
-      {
-        QDataStream writer(&synReply, QIODevice::WriteOnly);
-
-        writer << header << QString() << QString();
-
-        qDebug() << "Writing reply: Seq:" << header.seqNum
-                 << "Ack:" << header.ackNum << "Flags:" << header.flags;
-      }
-
-      sendPacket(m_peer, NetworkLayer::ReliableLink, synReply);
-
-      emit peerAccepted(m_peer);
-
-      m_state = Connected;
-
-      return true;
     }
   } else if (m_peer != target) {
     // We're not listening and this is not who we are talking to, ignore

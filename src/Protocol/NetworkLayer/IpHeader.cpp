@@ -7,5 +7,5 @@ QDataStream &Protocol::NetworkLayer::operator<<(QDataStream &stream, const Proto
 
 QDataStream &Protocol::NetworkLayer::operator>>(QDataStream &stream, Protocol::NetworkLayer::IpHeader &object)
 {
-    return stream >> object.sourceIp >> object.targetIp >> object.hops >> object.ttl << object.nextHeader;
+    return stream >> object.sourceIp >> object.targetIp >> object.hops >> object.ttl >> object.nextHeader;
 }
