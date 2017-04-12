@@ -39,7 +39,7 @@ void ReliableLink::handleAcknowledgement(qint32 ackNum) {
   while (it.hasNext()) {
     it.next();
 
-    if (it.key() < ackNum) {
+    if (it.key() <= ackNum) {
       it.remove();
     }
   }
@@ -47,27 +47,34 @@ void ReliableLink::handleAcknowledgement(qint32 ackNum) {
 
 void ReliableLink::handleReceivedPackets() {
   bool needAck = false;
+
+  while (m_receiveBuffer.firstKey() < m_ackNum) {
+    qint32 firstAck = m_receiveBuffer.firstKey();
+
+    needAck = true;
+    m_receiveBuffer.remove(firstAck);
+  }
+
   while (m_receiveBuffer.contains(m_ackNum)) {
-    {
-      QByteArray data = m_receiveBuffer.take(m_ackNum);
+    QByteArray data = m_receiveBuffer.take(m_ackNum);
 
-      QDataStream reader(data);
+    QDataStream reader(data);
 
-      Header readHeader;
+    Header readHeader;
 
-      reader >> readHeader;
+    reader >> readHeader;
 
-      // Make it certainly big enough
-      QByteArray payload(data.size(), 0);
+    // Make it certainly big enough
+    QByteArray payload(data.size(), 0);
 
-      // Read the remaining data
-      int read = reader.readRawData(payload.data(), payload.size());
+    // Read the remaining data
+    int read = reader.readRawData(payload.data(), payload.size());
 
-      // and trim the excess
-      payload.resize(read);
+    // and trim the excess
+    payload.resize(read);
 
-      if (!payload.isEmpty())
-        needAck = true;
+    if (!payload.isEmpty()) {
+      needAck = true;
 
       readPayload(payload);
     }
@@ -151,22 +158,6 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader,
              << "Ack:" << header.ackNum
              << "Flags:" << TransportLayer::flagDebug(header.flags);
 
-    // Store the header
-    Header replyHeader;
-
-    // Initialize the ack number to their seq number
-    m_ackNum = header.seqNum;
-
-    // Write the ack and our seq number
-    replyHeader.ackNum = newAck();
-    replyHeader.seqNum = newSeq();
-
-    // This is an acknowledgement
-    replyHeader.flags = Acknowledgement;
-
-    // Send packet
-    sendPacket(replyHeader);
-
     // We are now connected
     m_state = Connected;
 
@@ -206,6 +197,8 @@ void ReliableLink::processBuffer() {
 
     Header header;
 
+    header.ackNum = lastAck();
+    header.flags  = Acknowledgement;
     header.seqNum = newSeq();
     sendPacket(header, payload);
   }
@@ -229,7 +222,7 @@ void ReliableLink::sendPacket(ReliableLink::Header header, QByteArray payload) {
 
   NetworkLayer::HigherProtocolInterface::sendPacket(
       m_peer, NetworkLayer::ReliableLink, buffer);
-  m_resendTimeout.setInterval(5000);
+  m_resendTimeout.start(5000);
 }
 
 void ReliableLink::sendPacket(ReliableLink::Header header) {
