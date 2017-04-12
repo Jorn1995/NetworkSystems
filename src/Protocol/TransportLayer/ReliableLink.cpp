@@ -60,6 +60,10 @@ ReliableLink::ReliableLink(NetworkLayer::Router *router)
 void ReliableLink::handleAcknowledgement(qint32 ackNum) {
   QMutableMapIterator<qint32, QByteArray> it(m_sendBuffer);
 
+  if(m_state == SynReceived) {
+      m_state = Connected;
+  }
+
   while (it.hasNext()) {
     it.next();
 

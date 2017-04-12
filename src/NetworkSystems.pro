@@ -21,7 +21,8 @@ SOURCES += main.cpp\
     Protocol/NetworkLayer/IpHeader.cpp \
     Protocol/ApplicationLayer/ChatLink.cpp \
     Protocol/TransportLayer/Flag.cpp \
-    Protocol/TransportLayer/RawData.cpp
+    Protocol/TransportLayer/RawData.cpp \
+    Protocol/ApplicationLayer/PresenceBroadcaster.cpp
 
 HEADERS  += ChatWidget.h \
     config.h.local \
@@ -33,7 +34,8 @@ HEADERS  += ChatWidget.h \
     Protocol/NetworkLayer/Router.h \
     Protocol/NetworkLayer/IpHeader.h \
     Protocol/ApplicationLayer/ChatLink.h \
-    Protocol/TransportLayer/RawData.h
+    Protocol/TransportLayer/RawData.h \
+    Protocol/ApplicationLayer/PresenceBroadcaster.h
 
 OTHER_FILES +=
 

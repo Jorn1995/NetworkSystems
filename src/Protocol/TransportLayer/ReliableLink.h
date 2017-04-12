@@ -66,7 +66,7 @@ private:
 
   // Convenience next seq/ack numbers
   inline qint32 newSeq() { return m_seqNum++; }
-  inline qint32 lastSeq() { return m_ackNum - 1; }
+  inline qint32 lastSeq() { return m_seqNum - 1; }
   inline qint32 newAck() { return m_ackNum++; }
   inline qint32 lastAck() { return m_ackNum - 1; }
 
