@@ -253,6 +253,8 @@ void ReliableLink::ackSendTimeout() {
 
     // Send the packet with empty message
     sendPacket(writeHeader);
+
+    m_needAck = false;
   }
 }
 

@@ -10,13 +10,16 @@ enum NextHeaderType : qint8 {
     Empty = 0,
     ReliableLink,
     DataPacket,
+    RouteRequestPacket,
+    RouteReplyPacket,
+    RouteErrorPacket,
 };
 
 struct IpHeader
 {
-    qint8 sourceIp, targetIp;
-    qint8 hops, ttl;
-    qint8 nextHeader;
+    qint8 sourceIp = 0, targetIp = 0;
+    qint8 hops = 0, ttl = 8;
+    qint8 nextHeader = Empty;
 };
 
 QDataStream & operator<< (QDataStream & stream, const IpHeader & object);
