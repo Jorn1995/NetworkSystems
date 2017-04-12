@@ -38,6 +38,9 @@ protected:
   qint8 m_peer;
   enum State {
     Disconnected = 0,
+    Listening = 0,
+    SynReceived,
+    SynSent,
     Connecting,
     Connected,
   } m_state;
@@ -63,8 +66,12 @@ private:
 
   // Convenience next seq/ack numbers
   inline qint32 newSeq() { return m_seqNum++; }
+  inline qint32 lastSeq() { return m_ackNum - 1; }
   inline qint32 newAck() { return m_ackNum++; }
   inline qint32 lastAck() { return m_ackNum - 1; }
+
+  void sendSyn();
+  void sendSynAck();
 
 protected:
   // Higher protocol interface
@@ -91,6 +98,7 @@ signals:
 
 private slots:
   void resendBuffer();
+  void handleConnectionTimeout();
 };
 
 QDataStream &operator<<(QDataStream &stream,
