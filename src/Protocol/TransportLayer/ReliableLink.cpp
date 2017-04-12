@@ -41,8 +41,11 @@ void ReliableLink::sendSynAck() {
 
 ReliableLink::ReliableLink(qint8 peer, NetworkLayer::Router *router)
     : QObject(router), HigherProtocolInterface(router), m_resendTimeout(this),
-      m_peer(peer) {
+      m_ackSendTimeout(this), m_peer(peer) {
   connect(&m_resendTimeout, SIGNAL(timeout()), SLOT(resendBuffer()));
+  connect(&m_ackSendTimeout, SIGNAL(timeout()), SLOT(ackSendTimeout()));
+
+  m_ackSendTimeout.setInterval(1000);
 
   if (peer != 0) {
     qDebug() << "[RELIABLE] Link created with peer" << peer;
@@ -60,29 +63,36 @@ ReliableLink::ReliableLink(NetworkLayer::Router *router)
 void ReliableLink::handleAcknowledgement(qint32 ackNum) {
   QMutableMapIterator<qint32, QByteArray> it(m_sendBuffer);
 
-  if(m_state == SynReceived) {
-      m_state = Connected;
+  if (m_state == SynReceived) {
+    m_state = Connected;
   }
 
   while (it.hasNext()) {
     it.next();
 
-    if (it.key() <= ackNum) {
+    if (it.key() < ackNum) {
       it.remove();
     }
   }
 }
 
 void ReliableLink::handleReceivedPackets() {
-  bool needAck = false;
+  // Iterator to loop over the buffer
+  QMutableMapIterator<qint32, QByteArray> iter(m_receiveBuffer);
 
-  while (m_receiveBuffer.size() && m_receiveBuffer.firstKey() < m_ackNum) {
-    qint32 firstAck = m_receiveBuffer.firstKey();
-
-    needAck = true;
-    m_receiveBuffer.remove(firstAck);
+  // Remove old already received packets (duplicates)
+  while (iter.hasNext()) {
+    iter.next();
+    if (iter.key() < m_ackNum) {
+      // Found a duplicate, resend the ack we are at
+      m_needAck = true;
+      iter.remove();
+    } else {
+      break;
+    }
   }
 
+  // Find the next ack
   while (m_receiveBuffer.contains(m_ackNum)) {
     QByteArray data = m_receiveBuffer.take(m_ackNum);
 
@@ -102,7 +112,7 @@ void ReliableLink::handleReceivedPackets() {
     payload.resize(read);
 
     if (!payload.isEmpty()) {
-      needAck = true;
+      m_needAck = true;
 
       readPayload(payload);
     }
@@ -110,19 +120,14 @@ void ReliableLink::handleReceivedPackets() {
     newAck();
   }
 
-  if (needAck) {
-    // Create new header
-    Header writeHeader;
+  // There are gaps, resend our last ack
+  if(m_receiveBuffer.size()) {
+      m_needAck = true;
+  }
 
-    // Set the sequence number
-    writeHeader.seqNum = newSeq();
-
-    // Write the ack number
-    writeHeader.ackNum = lastAck(); // Compensate for while loop
-    writeHeader.flags = Acknowledgement;
-
-    // Send the packet with empty message
-    sendPacket(writeHeader);
+  // Set the timer to send the ack
+  if (m_needAck) {
+    m_ackSendTimeout.start();
   }
 }
 
@@ -234,6 +239,23 @@ void ReliableLink::handleConnectionTimeout() {
   }
 }
 
+void ReliableLink::ackSendTimeout() {
+  if (m_needAck) {
+    // Create new header
+    Header writeHeader;
+
+    // Set the sequence number
+    writeHeader.seqNum = newSeq();
+
+    // Write the ack number
+    writeHeader.ackNum = lastAck();
+    writeHeader.flags = Acknowledgement;
+
+    // Send the packet with empty message
+    sendPacket(writeHeader);
+  }
+}
+
 void ReliableLink::processBuffer() {
   while (m_databuffer.size()) {
     QByteArray payload = m_databuffer.dequeue();
@@ -243,6 +265,9 @@ void ReliableLink::processBuffer() {
     header.ackNum = lastAck();
     header.flags = Acknowledgement;
     header.seqNum = newSeq();
+
+    m_needAck = false;
+
     sendPacket(header, payload);
   }
 }

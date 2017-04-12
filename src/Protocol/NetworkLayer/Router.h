@@ -34,8 +34,11 @@ class Router : public QObject {
   QUdpSocket *m_socket;
 
   QMap<qint8, RoutingInformation> m_nodes;
+  QMap<QByteArray, QDateTime> m_seenDatagrams;
 
   QList<HigherProtocolInterface *> m_listeners;
+
+  QTimer m_cleanTimeout;
 
 protected:
   // Higher Protocol callbacks
@@ -45,10 +48,11 @@ protected:
   void writePacket(qint8 target, NextHeaderType nextHeader,
                    const QByteArray &payload);
 
-  void routePacket(const IpHeader &header, const QByteArray &datagram);
+  void routePacket(const IpHeader &header, const QByteArray &datagram, bool generated);
 
 private slots:
   void fetchPacket();
+  void cleanSeenPackets();
 
 public:
   explicit Router(QObject *parent = 0);

@@ -30,8 +30,10 @@ class ReliableLink : public QObject,
   // Sequence number tracking
   qint32 m_seqNum = 0, m_ackNum = 0;
 
+  bool m_needAck = false;
+
   // Timers
-  QTimer m_resendTimeout;
+  QTimer m_resendTimeout, m_ackSendTimeout;
 
 protected:
   // Link tracking
@@ -67,8 +69,8 @@ private:
   // Convenience next seq/ack numbers
   inline qint32 newSeq() { return m_seqNum++; }
   inline qint32 lastSeq() { return m_seqNum - 1; }
-  inline qint32 newAck() { return m_ackNum++; }
-  inline qint32 lastAck() { return m_ackNum - 1; }
+  inline qint32 newAck() { return ++m_ackNum; }
+  inline qint32 lastAck() { return m_ackNum; }
 
   void sendSyn();
   void sendSynAck();
@@ -99,6 +101,8 @@ signals:
 private slots:
   void resendBuffer();
   void handleConnectionTimeout();
+  void ackSendTimeout();
+
 };
 
 QDataStream &operator<<(QDataStream &stream,

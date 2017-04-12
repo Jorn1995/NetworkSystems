@@ -39,16 +39,22 @@ void Router::writePacket(qint8 target, NextHeaderType nextHeader,
   }
 
   qDebug() << "[ROUTER]   Send datagram to " << QHostAddress(GROUP);
-  m_socket->writeDatagram(packet, QHostAddress(GROUP), 1337);
+
+  routePacket(header, packet, true);
 }
 
-void Router::routePacket(const IpHeader &header, const QByteArray &datagram)
-{
+void Router::routePacket(const IpHeader &header, const QByteArray &datagram, bool generated) {
+  Q_UNUSED(header)
 
+  if (!m_seenDatagrams.contains(datagram) || generated) {
+    m_seenDatagrams[datagram] = QDateTime::currentDateTimeUtc();
+
+    m_socket->writeDatagram(datagram, QHostAddress(GROUP), 1337);
+  }
 }
 
 Router::Router(QObject *parent)
-    : QObject(parent), m_socket(new QUdpSocket(this)) {
+    : QObject(parent), m_socket(new QUdpSocket(this)), m_cleanTimeout(this) {
   // Listen for messages
   connect(m_socket, SIGNAL(readyRead()), SLOT(fetchPacket()));
 
@@ -60,6 +66,12 @@ Router::Router(QObject *parent)
 
   // Do not send to loopback
   m_socket->setSocketOption(QAbstractSocket::MulticastLoopbackOption, false);
+
+  connect(&m_cleanTimeout, SIGNAL(timeout()), SLOT(cleanSeenPackets()));
+
+  m_cleanTimeout.setInterval(5000);
+  m_cleanTimeout.setSingleShot(false);
+  m_cleanTimeout.start();
 }
 
 Router::~Router() {}
@@ -109,11 +121,24 @@ void Router::fetchPacket() {
         }
       }
 
-      if(header.targetIp == 0 || header.targetIp != MY_NODE_IP) {
-          routePacket(header, datagram);
+      if (header.targetIp == 0 || header.targetIp != MY_NODE_IP) {
+        routePacket(header, datagram, false);
       }
     }
   } // while hasPendingDatagrams
+}
+
+void Router::cleanSeenPackets()
+{
+    QMutableMapIterator<QByteArray, QDateTime> iter(m_seenDatagrams);
+
+    while(iter.hasNext()) {
+        iter.next();
+
+        if(iter.value().secsTo(QDateTime::currentDateTimeUtc()) > 120) {
+            iter.remove();
+        }
+    }
 }
 }
 } // namespace Protocol
