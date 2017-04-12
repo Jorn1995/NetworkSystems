@@ -161,6 +161,10 @@ bool ReliableLink::handlePacket(qint8 target, qint8 nextHeader,
     // We are now connected
     m_state = Connected;
 
+    m_ackNum = header.seqNum;
+
+    newAck();
+
     // Process any packets in our early send buffer
     processBuffer();
 
@@ -218,7 +222,7 @@ void ReliableLink::sendPacket(ReliableLink::Header header, QByteArray payload) {
 
   qDebug() << "[RELIABLE] Send - Seq:" << header.seqNum
            << "Ack:" << header.ackNum
-           << "Flags:" << TransportLayer::flagDebug(header.flags);
+           << "Flags:" << TransportLayer::flagDebug(header.flags) << "Data:" << true;
 
   NetworkLayer::HigherProtocolInterface::sendPacket(
       m_peer, NetworkLayer::ReliableLink, buffer);
@@ -236,7 +240,7 @@ void ReliableLink::sendPacket(ReliableLink::Header header) {
 
   qDebug() << "[RELIABLE] Send - Seq:" << header.seqNum
            << "Ack:" << header.ackNum
-           << "Flags:" << TransportLayer::flagDebug(header.flags);
+           << "Flags:" << TransportLayer::flagDebug(header.flags) << "Data:" << false;
 
   NetworkLayer::HigherProtocolInterface::sendPacket(
       m_peer, NetworkLayer::ReliableLink, buffer);
