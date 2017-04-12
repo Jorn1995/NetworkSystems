@@ -14,7 +14,7 @@ protected:
     void readPayload(const QByteArray & payload);
 
 public:
-    ChatLink(qint8 target, NetworkLayer::Router * router, QObject * parent);
+    ChatLink(qint8 target, NetworkLayer::Router * router);
     ~ChatLink();
 
 signals:

@@ -13,15 +13,23 @@ ChatWidget::ChatWidget(QWidget *parent)
 
   ui->setupUi(this);
   ui->splitter->setSizes(QList<int>() << 1 << 2);
-  m_listener = new Protocol::ApplicationLayer::ChatLink(0, m_router, this);
+  m_listener = new Protocol::ApplicationLayer::ChatLink(0, m_router);
   connect(m_listener, SIGNAL(peerAccepted(qint8)), this,
           SLOT(peerAccepted(qint8)));
   connect(m_listener, SIGNAL(newMessage(QString, QString)),
           SLOT(receivedMessage(QString, QString)));
-
 }
 
-ChatWidget::~ChatWidget() { delete ui; }
+ChatWidget::~ChatWidget() {
+  delete ui;
+  delete m_listener;
+
+  for (auto connection : m_connections) {
+    delete connection;
+  }
+
+  delete m_router;
+}
 
 void ChatWidget::receivedMessage(const QString &message,
                                  const QString &sender) {
@@ -33,7 +41,7 @@ void ChatWidget::peerAccepted(qint8 peer) {
   disconnect(m_listener, SIGNAL(peerAccepted(qint8)), this,
              SLOT(peerAccepted(qint8)));
 
-  m_listener = new Protocol::ApplicationLayer::ChatLink(0, m_router, this);
+  m_listener = new Protocol::ApplicationLayer::ChatLink(0, m_router);
   connect(m_listener, SIGNAL(peerAccepted(qint8)), SLOT(peerAccepted(qint8)));
 }
 
@@ -42,11 +50,12 @@ void ChatWidget::sendMessage() {
   if (!message.isEmpty()) {
     qint8 target = qint8(ui->target->value());
 
-    Protocol::ApplicationLayer::ChatLink *link = m_connections.value(target, nullptr);
+    Protocol::ApplicationLayer::ChatLink *link =
+        m_connections.value(target, nullptr);
 
     if (!link) {
       link = m_connections[target] =
-          new Protocol::ApplicationLayer::ChatLink(target, m_router, this);
+          new Protocol::ApplicationLayer::ChatLink(target, m_router);
       connect(link, SIGNAL(newMessage(QString, QString)),
               SLOT(receivedMessage(QString, QString)));
     }

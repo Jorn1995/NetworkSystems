@@ -27,6 +27,13 @@ class ReliableLink : public QObject,
 
   QQueue<QByteArray> m_databuffer;
 
+  // Sequence number tracking
+  qint32 m_seqNum = 0, m_ackNum = 0;
+
+  // Timers
+  QTimer m_resendTimeout;
+
+protected:
   // Link tracking
   qint8 m_peer;
   enum State {
@@ -34,20 +41,6 @@ class ReliableLink : public QObject,
     Connecting,
     Connected,
   } m_state;
-
-  // Sequence number tracking
-  qint32 m_seqNum = 0, m_ackNum = 0;
-
-  // Timers
-  QTimer m_resendTimeout;
-
-  void handleAcknowledgement(qint32 ackNum);
-  void handleReceivedPackets();
-
-  void processBuffer();
-
-  qint32 newSeq() { return m_seqNum++; }
-  qint32 newAck() { return m_ackNum++; }
 
 public:
   struct Header {
@@ -57,19 +50,41 @@ public:
   };
 
 private:
+  // Send packet convenience functions
   void sendPacket(Header header, QByteArray payload);
   void sendPacket(Header header);
 
+  // Handle acks and received packets
+  void handleAcknowledgement(qint32 ackNum);
+  void handleReceivedPackets();
+
+  // Process the send buffer
+  void processBuffer();
+
+  // Convenience next seq/ack numbers
+  inline qint32 newSeq() { return m_seqNum++; }
+  inline qint32 newAck() { return m_ackNum++; }
+  inline qint32 lastAck() { return m_ackNum - 1; }
+
 protected:
-  virtual void readPayload(const QByteArray & payload);
-  void writePayload(const QByteArray & payload);
+  // Higher protocol interface
+  virtual void readPayload(const QByteArray &payload);
+  void writePayload(const QByteArray &payload);
 
 public:
+  // Handle incomming packet
   bool handlePacket(qint8 target, qint8 nextHeader, const QByteArray &data);
 
 public:
-  explicit ReliableLink(qint8 peer, NetworkLayer::Router *router,
-                        QObject *parent = 0);
+  /**
+   * @brief ReliableLink
+   * @param peer, peer to connect to, 0 = listen for others
+   * @param router
+   * @param parent
+   */
+  explicit ReliableLink(qint8 peer, NetworkLayer::Router *router);
+
+  explicit ReliableLink(NetworkLayer::Router *router);
 
 signals:
   void peerAccepted(qint8 address);

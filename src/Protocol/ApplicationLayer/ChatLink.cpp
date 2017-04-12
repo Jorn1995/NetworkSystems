@@ -13,8 +13,8 @@ void ChatLink::readPayload(const QByteArray &payload) {
   emit newMessage(message, from);
 }
 
-ChatLink::ChatLink(qint8 target, NetworkLayer::Router *router, QObject *parent)
-    : TransportLayer::ReliableLink(target, router, parent) {}
+ChatLink::ChatLink(qint8 target, NetworkLayer::Router *router)
+    : TransportLayer::ReliableLink(target, router) {}
 
 ChatLink::~ChatLink() {}
 

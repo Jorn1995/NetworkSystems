@@ -3,13 +3,14 @@
 #include <QDataStream>
 #include <QDebug>
 
+#include "../NetworkLayer/Router.h"
+
 namespace Protocol {
 namespace TransportLayer {
 
-ReliableLink::ReliableLink(qint8 peer, NetworkLayer::Router *router,
-                           QObject *parent)
-    : QObject(parent), HigherProtocolInterface(router), m_peer(peer),
-      m_resendTimeout(this) {
+ReliableLink::ReliableLink(qint8 peer, NetworkLayer::Router *router)
+    : QObject(router), HigherProtocolInterface(router), m_resendTimeout(this),
+      m_peer(peer) {
   connect(&m_resendTimeout, SIGNAL(timeout()), SLOT(resendBuffer()));
 
   if (peer != 0) {
@@ -28,6 +29,9 @@ ReliableLink::ReliableLink(qint8 peer, NetworkLayer::Router *router,
     sendPacket(header);
   }
 }
+
+ReliableLink::ReliableLink(NetworkLayer::Router *router)
+    : ReliableLink(0, router) {}
 
 void ReliableLink::handleAcknowledgement(qint32 ackNum) {
   QMutableMapIterator<qint32, QByteArray> it(m_sendBuffer);
@@ -68,7 +72,7 @@ void ReliableLink::handleReceivedPackets() {
       readPayload(payload);
     }
 
-    m_ackNum++;
+    newAck();
   }
 
   if (needAck) {
@@ -79,7 +83,7 @@ void ReliableLink::handleReceivedPackets() {
     writeHeader.seqNum = newSeq();
 
     // Write the ack number
-    writeHeader.ackNum = m_ackNum - 1; // Compensate for while loop
+    writeHeader.ackNum = lastAck(); // Compensate for while loop
     writeHeader.flags = Acknowledgement;
 
     // Send the packet with empty message

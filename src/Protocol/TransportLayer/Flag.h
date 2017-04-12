@@ -1,6 +1,8 @@
 #ifndef FLAG_H
 #define FLAG_H
+
 #include "QFlags"
+
 namespace Protocol {
 namespace TransportLayer {
 

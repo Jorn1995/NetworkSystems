@@ -3,60 +3,66 @@
 #include <QDataStream>
 #include <QUdpSocket>
 #include "config.h"
+#include <Protocol/TransportLayer/RawData.h>
+#include <Protocol/TransportLayer/ReliableLink.h>
 
 namespace Protocol {
 namespace NetworkLayer {
 
-
-void Router::registerHigherProtocol(HigherProtocolInterface *self)
-{
-    m_listeners.append(self);
+void Router::registerHigherProtocol(HigherProtocolInterface *self) {
+  m_listeners.append(self);
 }
 
-void Router::deregisterHigherProtocol(HigherProtocolInterface *self)
-{
-    m_listeners.removeAll(self);
+void Router::deregisterHigherProtocol(HigherProtocolInterface *self) {
+  m_listeners.removeAll(self);
 }
 
-void Router::writePacket(qint8 target, NextHeaderType nextHeader, const QByteArray &payload)
-{
-    IpHeader header;
+void Router::writePacket(qint8 target, NextHeaderType nextHeader,
+                         const QByteArray &payload) {
+  IpHeader header;
 
-    header.sourceIp = MY_NODE_IP;
-    header.targetIp = target;
-    header.nextHeader = nextHeader;
+  header.sourceIp = MY_NODE_IP;
+  header.targetIp = target;
+  header.nextHeader = nextHeader;
 
-    header.hops = 0;
-    header.ttl = 8;
+  header.hops = 0;
+  header.ttl = 8;
 
-    QByteArray packet;
+  QByteArray packet;
 
-    {
-        QDataStream writer(&packet, QIODevice::WriteOnly);
+  {
+    QDataStream writer(&packet, QIODevice::WriteOnly);
 
-        writer.setVersion(QDataStream::Qt_4_0);
+    writer.setVersion(QDataStream::Qt_4_0);
 
-        writer << header << payload;
-    }
+    writer << header << payload;
+  }
 
-    qDebug() << "[ROUTER]   Send datagram to "<< QHostAddress(GROUP);
-    m_socket->writeDatagram(packet, QHostAddress(GROUP), 1337);
+  qDebug() << "[ROUTER]   Send datagram to " << QHostAddress(GROUP);
+  m_socket->writeDatagram(packet, QHostAddress(GROUP), 1337);
 }
 
-Router::Router(QObject *parent) : QObject(parent) , m_socket(new QUdpSocket(this))
+void Router::routePacket(const IpHeader &header, const QByteArray &datagram)
 {
-    // Listen for messages
-    connect(m_socket, SIGNAL(readyRead()), SLOT(fetchPacket()));
 
-    // Bind to any address
-    m_socket->bind(QHostAddress::AnyIPv4, PORT, QAbstractSocket::ShareAddress);
-
-    // Join the multicast group
-    m_socket->joinMulticastGroup(QHostAddress(GROUP));
-
-    // Do not send to loopback
-    m_socket->setSocketOption(QAbstractSocket::MulticastLoopbackOption, false);
 }
+
+Router::Router(QObject *parent)
+    : QObject(parent), m_socket(new QUdpSocket(this)) {
+  // Listen for messages
+  connect(m_socket, SIGNAL(readyRead()), SLOT(fetchPacket()));
+
+  // Bind to any address
+  m_socket->bind(QHostAddress::AnyIPv4, PORT, QAbstractSocket::ShareAddress);
+
+  // Join the multicast group
+  m_socket->joinMulticastGroup(QHostAddress(GROUP));
+
+  // Do not send to loopback
+  m_socket->setSocketOption(QAbstractSocket::MulticastLoopbackOption, false);
+}
+
+Router::~Router() {}
 
 void Router::fetchPacket() {
 
@@ -89,24 +95,25 @@ void Router::fetchPacket() {
       // Read the message
       reader >> header;
 
-      QByteArray payload;
+      if (header.targetIp == 0 || header.targetIp == MY_NODE_IP) {
+        QByteArray payload;
 
-      reader >> payload;
+        reader >> payload;
 
-      for(HigherProtocolInterface * listener : m_listeners) {
-          bool done = listener->handlePacket(header.sourceIp, header.nextHeader, payload);
-
-          if(done) {
-              break;
+        for (HigherProtocolInterface *listener : m_listeners) {
+          bool done = listener->handlePacket(header.sourceIp, header.nextHeader,
+                                             payload);
+          if (done) {
+            break;
           }
+        }
       }
 
-
+      if(header.targetIp == 0 || header.targetIp != MY_NODE_IP) {
+          routePacket(header, datagram);
+      }
     }
   } // while hasPendingDatagrams
 }
-
-
 }
 } // namespace Protocol
-
